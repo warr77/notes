@@ -341,6 +341,40 @@ exports.deletePost = (req, res) => {
   );
 };
 
+exports.deletePermission = (req, res) => {
+  console.log(req.query.id, req.query.postid, req.profileid);
+
+  pool.query(
+    `DELETE FROM permissions
+    WHERE user_id = $1
+      AND post_id = $2
+      AND (
+        SELECT can_delete
+        FROM permissions
+        WHERE user_id = $3
+          AND post_id = $2
+      ) = TRUE;
+     `,
+    [req.query.user, req.query.postid, req.profileid],
+    async (err, results) => {
+      if (err) {
+        // throw err;
+        return res.status(400).json({
+          error: true,
+          errmsg: "Something went wrong",
+          err: err,
+        });
+      } else {
+        return res.json({
+          error: false,
+          success: true,
+          result: results.rows,
+        });
+      }
+    }
+  );
+};
+
 exports.viewPost = (req, res) => {
   //res.send("hello");
   // console.log(req.query.userid, req.query.limit, req.query.offset);
@@ -387,7 +421,7 @@ post
 JOIN
 permissions ON post.id = permissions.post_id
 WHERE
-post.title LIKE ${req?.query?.search ? "'%" + req?.query?.search + "%'" : "%%"}
+post.title ILIKE ${req?.query?.search ? "'%" + req?.query?.search + "%'" : "%%"}
 AND permissions.user_id = ${req.profileid}
 AND permissions.can_read = true
 ORDER BY
@@ -409,7 +443,7 @@ post.updated_at DESC LIMIT 5;`);
     JOIN
     permissions ON post.id = permissions.post_id
     WHERE
-    post.title LIKE ${
+    post.title ILIKE ${
       req?.query?.search ? "'%" + req?.query?.search + "%'" : "'%%'"
     }
     AND permissions.user_id = ${req.profileid}
@@ -474,12 +508,40 @@ exports.getUsersByName = (req, res) => {
   // const { title, body, userid } = req.body;
 
   pool.query(
-    `SELECT id,name,email FROM users WHERE name ILIKE '%${
+    `SELECT id,name,email FROM users WHERE LOWER(name) ILIKE LOWER('%${
       req.query.search
-    }%' AND id !=${req.profileid} ORDER BY id LIMIT ${
+    }%') AND id !=${req.profileid} ORDER BY id LIMIT ${
       req.query.limit || 10
     } ; `,
     [],
+    async (err, results) => {
+      if (err) {
+        // throw err;
+        return res.status(400).json({
+          error: true,
+          errmsg: "Something went wrong",
+          err: err,
+        });
+      } else {
+        return res.json({ error: false, success: true, result: results.rows });
+      }
+    }
+  );
+};
+
+exports.getUsersByPost = (req, res) => {
+  //res.send("hello");
+  // console.log(req.query.search, req.query.limit, req.query.offset);
+  // const { title, body, userid } = req.body;
+
+  pool.query(
+    `SELECT u.id, u.name
+    FROM users u
+    JOIN permissions p ON u.id = p.user_id
+    WHERE p.post_id = $1
+    AND p.can_delete = false
+    AND p.can_read = true `,
+    [req.query.search],
     async (err, results) => {
       if (err) {
         // throw err;

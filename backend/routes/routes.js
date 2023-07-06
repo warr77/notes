@@ -19,6 +19,8 @@ const {
   getbytitle,
   share,
   getUsersByName,
+  getUsersByPost,
+  deletePermission,
 } = require("../controller/auth");
 const bodyParser = require("body-parser");
 // const group=require('./group')
@@ -34,10 +36,12 @@ router.post("/post", verifyToken, isAuth, createPost);
 router.get("/post", verifyToken, isAuth, getPost);
 router.put("/post", updatePost);
 router.delete("/post", verifyToken, isAuth, deletePost);
+router.delete("/delpermission", verifyToken, isAuth, deletePermission);
 router.get("/viewpost", verifyToken, isAuth, viewPost);
 router.get("/search", verifyToken, isAuth, getbytitle);
 router.post("/share", verifyToken, isAuth, share);
 router.get("/userbyname", verifyToken, isAuth, getUsersByName);
+router.get("/userbypost", verifyToken, isAuth, getUsersByPost);
 // router.post('/group/create',creategroup);
 // router.get('/list/groups',listgroups);
 // router.post('/list/msg',listmsg);
